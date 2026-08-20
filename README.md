@@ -1,5 +1,7 @@
 # 我的待辦（個人 todo）
 
+## [🚀 直接開啟我的待辦](https://alicenoted-coder.github.io/My-Todo/)
+
 一個照你習慣做的待辦清單網頁，**完全免費、不用學寫程式、不會過期**。
 資料存在你自己的裝置裡，沒有別人看得到。
 
@@ -33,7 +35,7 @@
 4. 「Build and deployment」→ Source 選 **Deploy from a branch**。
 5. Branch 選你的分支（或先把這個分支合併到 `main` 再選 `main`），資料夾選 **/ (root)**，按 **Save**。
 6. 等一兩分鐘，頁面上會出現一個網址，例如：
-   `https://你的帳號.github.io/My-Todo/`
+   [https://alicenoted-coder.github.io/My-Todo/](https://alicenoted-coder.github.io/My-Todo/)
 7. 用 **iPhone 的 Safari** 打開那個網址。
 8. 按底下的「分享」鈕 → **加入主畫面**。
 9. 桌面就會出現「待辦」圖示，點開是全螢幕，跟 app 一樣。
