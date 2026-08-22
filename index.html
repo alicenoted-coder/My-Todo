@@ -146,7 +146,9 @@
   }
   .composer-inner{max-width:680px;margin:0 auto;display:flex;gap:8px;align-items:center}
   #newTitle{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:12px;padding:12px 14px;font-size:16px}
-  #newPrio{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:12px;padding:0 8px;font-size:14px;font-weight:700;height:46px}
+  .seg{flex:0 0 auto;display:flex;gap:3px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:3px;height:46px;align-items:center}
+  .seg-opt{width:34px;height:38px;border:none;background:transparent;border-radius:9px;font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.4;transition:opacity .15s,background .15s}
+  .seg-opt.active{background:var(--card);opacity:1;box-shadow:var(--shadow)}
   .add-btn{flex:0 0 auto;width:46px;height:46px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:26px;font-weight:300;line-height:1;cursor:pointer}
   .composer-more{max-width:680px;margin:8px auto 0;display:none;gap:8px}
   .composer-more.open{display:flex}
@@ -174,7 +176,8 @@
       padding:16px;margin:0;
     }
     .composer-inner{flex-direction:column;align-items:stretch}
-    #newPrio{width:100%}
+    .seg{width:100%}
+    .seg-opt{flex:1;width:auto}
     .add-btn{width:100%;height:44px;border-radius:10px}
     .composer-more{flex-direction:column}
   }
@@ -210,11 +213,11 @@
 <div class="composer">
   <div class="composer-inner">
     <input type="text" id="newTitle" placeholder="新增待辦事項…" autocomplete="off" enterkeyhint="done">
-    <select id="newPrio" title="重要程度">
-      <option value="high">🔴 高</option>
-      <option value="mid" selected>🟡 中</option>
-      <option value="low">🟢 低</option>
-    </select>
+    <div class="seg" id="newPrio" data-value="mid" role="group" aria-label="重要程度">
+      <button type="button" class="seg-opt" data-val="high" title="高" aria-label="高" aria-pressed="false">🔴</button>
+      <button type="button" class="seg-opt active" data-val="mid" title="中" aria-label="中" aria-pressed="true">🟡</button>
+      <button type="button" class="seg-opt" data-val="low" title="低" aria-label="低" aria-pressed="false">🟢</button>
+    </div>
     <button class="add-btn" id="addBtn" aria-label="新增">＋</button>
   </div>
   <div class="composer-more" id="composerMore">
@@ -288,7 +291,7 @@
     const est = $("#newEst").value.trim();
     const t = {
       id: uid(), title,
-      priority: $("#newPrio").value,
+      priority: $("#newPrio").dataset.value,
       due: $("#newDue").value || null,
       repeat: $("#newRepeat").value,
       note:"", subtasks:[], done:false, doneAt:null,
@@ -633,6 +636,17 @@
   }
 
   // ---------- 綁定 ----------
+  const newPrioSeg = $("#newPrio");
+  newPrioSeg.querySelectorAll(".seg-opt").forEach(btn=>{
+    btn.onclick=()=>{
+      newPrioSeg.dataset.value = btn.dataset.val;
+      newPrioSeg.querySelectorAll(".seg-opt").forEach(b=>{
+        const on = b===btn;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-pressed", on?"true":"false");
+      });
+    };
+  });
   $("#addBtn").onclick=addTask;
   $("#newTitle").addEventListener("keydown",e=>{ if(e.key==="Enter") addTask(); });
   $("#toggleMore").onclick=()=>{
