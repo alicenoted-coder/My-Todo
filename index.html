@@ -95,7 +95,15 @@
   .chip.rep{background:var(--low-soft);color:var(--low)}
   .chip.sub{background:var(--bg);color:var(--muted)}
   .chip.notewhen{color:var(--muted)}
+  .chip.timerchip{background:var(--accent-soft);color:var(--accent)}
+  .chip.estchip{color:var(--muted)}
   .expander{flex:0 0 auto;color:var(--muted);font-size:13px;padding:2px 4px;cursor:pointer;user-select:none}
+  .timer-btn{
+    flex:0 0 auto;width:28px;height:28px;border-radius:50%;margin-top:1px;
+    border:1px solid var(--line);background:var(--bg);color:var(--accent);
+    font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .timer-btn.running{background:var(--accent-soft);border-color:var(--accent)}
 
   /* 展開明細 */
   .detail{border-top:1px solid var(--line);padding:14px;display:none;background:var(--card)}
@@ -121,6 +129,11 @@
   .detail-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
   .btn-del{color:var(--high);background:none;border:none;font-size:14px;font-weight:700;cursor:pointer;padding:6px 2px}
   .btn-small{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn-small:disabled{opacity:.4;cursor:default}
+  .btn-small.alt{background:var(--mid)}
+  .btn-small.done{background:var(--low)}
+  .timer-actions{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .elapsed-display{font-size:15px;font-weight:700;padding:9px 11px;background:var(--bg);border:1px solid var(--line);border-radius:10px}
 
   /* 空狀態 */
   .empty{text-align:center;color:var(--muted);padding:60px 20px}
@@ -154,9 +167,27 @@
   .settings .hint{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.6}
   .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000;color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
   .toast.show{opacity:.92}
+
+  /* 桌機版：清單在左，新增輸入在右側常駐側欄 */
+  @media (min-width:900px){
+    body{padding-bottom:0}
+    .layout{display:flex;gap:24px;max-width:1040px;margin:0 auto;padding:24px 16px;align-items:flex-start}
+    .wrap{flex:1;min-width:0;max-width:none;padding:0}
+    .composer{
+      position:sticky;top:24px;left:auto;right:auto;bottom:auto;
+      width:300px;flex:0 0 300px;
+      border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+      padding:16px;margin:0;
+    }
+    .composer-inner{flex-direction:column;align-items:stretch}
+    #newPrio{width:100%}
+    .add-btn{width:100%;height:44px;border-radius:10px}
+    .composer-more{flex-direction:column}
+  }
 </style>
 </head>
 <body>
+<div class="layout">
 <div class="wrap">
   <header>
     <div class="title-row">
@@ -204,8 +235,10 @@
       <option value="weekly">每週</option>
       <option value="monthly">每月</option>
     </select>
+    <input type="number" id="newEst" min="0" step="5" placeholder="預計時間（分）" title="預計時間（分鐘）">
   </div>
   <button class="toggle-more" id="toggleMore">＋ 到期日／重複</button>
+</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -263,28 +296,70 @@
   function addTask(){
     const title = $("#newTitle").value.trim();
     if(!title) return;
+    const est = $("#newEst").value.trim();
     const t = {
       id: uid(), title,
       priority: $("#newPrio").value,
       due: $("#newDue").value || null,
       repeat: $("#newRepeat").value,
       note:"", subtasks:[], done:false, doneAt:null,
+      estimatedMin: est ? Math.max(0,parseInt(est,10)) : null,
+      elapsedSec: 0, running:false, timerStartedAt:null,
       createdAt: new Date().toISOString()
     };
     state.tasks.push(t); save();
-    $("#newTitle").value=""; $("#newDue").value=""; $("#newRepeat").value="none";
+    $("#newTitle").value=""; $("#newDue").value=""; $("#newRepeat").value="none"; $("#newEst").value="";
     $("#composerMore").classList.remove("open");
     render(); $("#newTitle").focus();
   }
+
+  // ---------- 時間追蹤 ----------
+  function currentElapsedSec(t){
+    let sec = t.elapsedSec||0;
+    if(t.running && t.timerStartedAt) sec += Math.floor((Date.now()-new Date(t.timerStartedAt).getTime())/1000);
+    return sec;
+  }
+  function formatElapsed(sec){
+    sec = Math.max(0, Math.floor(sec));
+    const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
+    return (h>0 ? h+":"+String(m).padStart(2,"0") : String(m)) + ":" + String(s).padStart(2,"0");
+  }
+  function stopTimerAccum(t){
+    if(t.running){ t.elapsedSec = currentElapsedSec(t); t.running=false; t.timerStartedAt=null; }
+  }
+  function startTimer(t){
+    if(t.done || t.running) return;
+    t.running=true; t.timerStartedAt=new Date().toISOString();
+    save(); render();
+  }
+  function pauseTimer(t){
+    if(!t.running) return;
+    stopTimerAccum(t); save(); render();
+  }
+  function completeTimerTask(t){
+    stopTimerAccum(t); toggleDone(t);
+  }
+  function updateRunningChips(){
+    document.querySelectorAll("[data-timer-live]").forEach(el=>{
+      const id = el.getAttribute("data-timer-live");
+      const t = state.tasks.find(x=>x.id===id);
+      if(t && t.running) el.textContent = "⏱ "+formatElapsed(currentElapsedSec(t));
+    });
+  }
+  setInterval(updateRunningChips, 1000);
+
   function toggleDone(t){
     if(!t.done){
+      stopTimerAccum(t);
       // 完成。若有重複，先生出下一個進行中的同事項
       if(t.repeat && t.repeat!=="none"){
         state.tasks.push({
           id:uid(), title:t.title, priority:t.priority,
           due: nextDue(t.due, t.repeat), repeat:t.repeat,
           note:t.note, subtasks:t.subtasks.map(s=>({id:uid(),title:s.title,done:false})),
-          done:false, doneAt:null, createdAt:new Date().toISOString()
+          done:false, doneAt:null,
+          estimatedMin:t.estimatedMin, elapsedSec:0, running:false, timerStartedAt:null,
+          createdAt:new Date().toISOString()
         });
         toast("已完成，下一次已自動排好");
       }
@@ -386,10 +461,28 @@
     if(t.note && t.note.trim()){
       const ch=document.createElement("span"); ch.className="chip notewhen"; ch.textContent="📝 備註"; meta.appendChild(ch);
     }
+    if(t.estimatedMin){
+      const ch=document.createElement("span"); ch.className="chip estchip"; ch.textContent="🎯 預計 "+t.estimatedMin+"分"; meta.appendChild(ch);
+    }
+    if(t.elapsedSec>0 || t.running){
+      const ch=document.createElement("span"); ch.className="chip timerchip";
+      ch.setAttribute("data-timer-live", t.id);
+      ch.textContent="⏱ "+formatElapsed(currentElapsedSec(t));
+      meta.appendChild(ch);
+    }
     if(meta.children.length) main.appendChild(meta);
 
     main.onclick=()=>{ if(openIds.has(t.id))openIds.delete(t.id); else openIds.add(t.id); renderDetail(); };
     row.appendChild(main);
+
+    if(!t.done){
+      const tb=document.createElement("button");
+      tb.className="timer-btn"+(t.running?" running":"");
+      tb.textContent = t.running ? "⏸" : "▶";
+      tb.title = t.running ? "暫停" : "開始";
+      tb.onclick=e=>{ e.stopPropagation(); t.running ? pauseTimer(t) : startTimer(t); };
+      row.appendChild(tb);
+    }
 
     const exp=document.createElement("div"); exp.className="expander"; exp.textContent = openIds.has(t.id)?"收合":"展開";
     exp.onclick=()=>{ if(openIds.has(t.id))openIds.delete(t.id); else openIds.add(t.id); renderDetail(); };
@@ -417,6 +510,38 @@
     three.appendChild(wrapField("重複", selectEl(
       [["none","不重複"],["daily","每天"],["weekly","每週"],["monthly","每月"]], t.repeat||"none", v=>{ patch(t,"repeat",v); render(); })));
     d.appendChild(three);
+
+    // 時間追蹤：預計時間 / 已花費時間
+    const timeThree=document.createElement("div"); timeThree.className="field field-3";
+    const estInput=document.createElement("input"); estInput.type="number"; estInput.min="0"; estInput.step="5";
+    estInput.placeholder="例如 30"; estInput.value = t.estimatedMin!=null ? t.estimatedMin : "";
+    estInput.onchange=()=>{
+      const v=estInput.value.trim();
+      patch(t,"estimatedMin", v ? Math.max(0,parseInt(v,10)) : null); render();
+    };
+    timeThree.appendChild(wrapField("預計時間（分鐘）", estInput));
+
+    const elapsedBox=document.createElement("div");
+    const elLabel=document.createElement("label"); elLabel.textContent="已花費時間";
+    const elVal=document.createElement("div"); elVal.className="elapsed-display";
+    elVal.setAttribute("data-timer-live", t.id);
+    elVal.textContent = "⏱ "+formatElapsed(currentElapsedSec(t));
+    elapsedBox.append(elLabel, elVal);
+    timeThree.appendChild(elapsedBox);
+    d.appendChild(timeThree);
+
+    const timerActions=document.createElement("div"); timerActions.className="timer-actions";
+    const startBtn=document.createElement("button"); startBtn.className="btn-small"; startBtn.textContent="▶ 開始";
+    startBtn.disabled = t.done || t.running;
+    startBtn.onclick=()=>startTimer(t);
+    const pauseBtn=document.createElement("button"); pauseBtn.className="btn-small alt"; pauseBtn.textContent="⏸ 暫停";
+    pauseBtn.disabled = t.done || !t.running;
+    pauseBtn.onclick=()=>pauseTimer(t);
+    const completeBtn=document.createElement("button"); completeBtn.className="btn-small done"; completeBtn.textContent="✅ 標記完成";
+    completeBtn.disabled = t.done;
+    completeBtn.onclick=()=>completeTimerTask(t);
+    timerActions.append(startBtn, pauseBtn, completeBtn);
+    d.appendChild(timerActions);
 
     // 備註
     d.appendChild(fieldArea("備註", t.note||"", v=>{ patch(t,"note",v); }));
