@@ -53,20 +53,15 @@
   .title-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
   h1{font-size:28px;font-weight:800;margin:0;letter-spacing:-.5px}
   .date-today{color:var(--muted);font-size:14px;font-weight:600}
-  .tabs{display:flex;gap:6px;margin-top:12px}
-  .tab{
-    flex:1;border:none;background:transparent;color:var(--muted);
-    font-size:15px;font-weight:700;padding:8px 4px;border-radius:10px;cursor:pointer;
-  }
-  .tab.active{background:var(--card);color:var(--text);box-shadow:var(--shadow)}
-
   /* 群組 */
   .group{margin-top:18px}
   .group-head{display:flex;align-items:center;gap:8px;margin:0 4px 8px}
   .dot{width:9px;height:9px;border-radius:50%}
-  .dot.high{background:var(--high)} .dot.mid{background:var(--mid)} .dot.low{background:var(--low)}
+  .dot.high{background:var(--high)} .dot.mid{background:var(--mid)} .dot.low{background:var(--low)} .dot.donedot{background:var(--done)}
   .group-title{font-size:13px;font-weight:800;letter-spacing:.3px;text-transform:none}
   .group-count{color:var(--muted);font-size:13px;font-weight:600}
+  .group-head .clear-btn{margin-left:auto}
+  .all-done-note{text-align:center;color:var(--muted);padding:20px 4px;font-size:14px}
 
   /* 卡片 */
   .card{
@@ -95,7 +90,15 @@
   .chip.rep{background:var(--low-soft);color:var(--low)}
   .chip.sub{background:var(--bg);color:var(--muted)}
   .chip.notewhen{color:var(--muted)}
+  .chip.timerchip{background:var(--accent-soft);color:var(--accent)}
+  .chip.estchip{color:var(--muted)}
   .expander{flex:0 0 auto;color:var(--muted);font-size:13px;padding:2px 4px;cursor:pointer;user-select:none}
+  .timer-btn{
+    flex:0 0 auto;width:28px;height:28px;border-radius:50%;margin-top:1px;
+    border:1px solid var(--line);background:var(--bg);color:var(--accent);
+    font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .timer-btn.running{background:var(--accent-soft);border-color:var(--accent)}
 
   /* 展開明細 */
   .detail{border-top:1px solid var(--line);padding:14px;display:none;background:var(--card)}
@@ -121,13 +124,17 @@
   .detail-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
   .btn-del{color:var(--high);background:none;border:none;font-size:14px;font-weight:700;cursor:pointer;padding:6px 2px}
   .btn-small{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn-small:disabled{opacity:.4;cursor:default}
+  .btn-small.alt{background:var(--mid)}
+  .btn-small.done{background:var(--low)}
+  .timer-actions{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .elapsed-display{font-size:15px;font-weight:700;padding:9px 11px;background:var(--bg);border:1px solid var(--line);border-radius:10px}
 
   /* 空狀態 */
   .empty{text-align:center;color:var(--muted);padding:60px 20px}
   .empty .big{font-size:40px;margin-bottom:10px}
 
   /* 已完成 */
-  .done-actions{display:flex;justify-content:flex-end;margin:6px 4px}
   .link-btn{background:none;border:none;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer}
 
   /* 新增列（底部固定） */
@@ -139,7 +146,9 @@
   }
   .composer-inner{max-width:680px;margin:0 auto;display:flex;gap:8px;align-items:center}
   #newTitle{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:12px;padding:12px 14px;font-size:16px}
-  #newPrio{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:12px;padding:0 8px;font-size:14px;font-weight:700;height:46px}
+  .seg{flex:0 0 auto;display:flex;gap:3px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:3px;height:46px;align-items:center}
+  .seg-opt{width:34px;height:38px;border:none;background:transparent;border-radius:9px;font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.4;transition:opacity .15s,background .15s}
+  .seg-opt.active{background:var(--card);opacity:1;box-shadow:var(--shadow)}
   .add-btn{flex:0 0 auto;width:46px;height:46px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:26px;font-weight:300;line-height:1;cursor:pointer}
   .composer-more{max-width:680px;margin:8px auto 0;display:none;gap:8px}
   .composer-more.open{display:flex}
@@ -154,18 +163,33 @@
   .settings .hint{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.6}
   .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000;color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
   .toast.show{opacity:.92}
+
+  /* 桌機版：清單在左，新增輸入在右側常駐側欄 */
+  @media (min-width:900px){
+    body{padding-bottom:0}
+    .layout{display:flex;gap:24px;max-width:1040px;margin:0 auto;padding:24px 16px;align-items:flex-start}
+    .wrap{flex:1;min-width:0;max-width:none;padding:0}
+    .composer{
+      position:sticky;top:24px;left:auto;right:auto;bottom:auto;
+      width:300px;flex:0 0 300px;
+      border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+      padding:16px;margin:0;
+    }
+    .composer-inner{flex-direction:column;align-items:stretch}
+    .seg{width:100%}
+    .seg-opt{flex:1;width:auto}
+    .add-btn{width:100%;height:44px;border-radius:10px}
+    .composer-more{flex-direction:column}
+  }
 </style>
 </head>
 <body>
+<div class="layout">
 <div class="wrap">
   <header>
     <div class="title-row">
       <h1>我的待辦</h1>
       <span class="date-today" id="todayLabel"></span>
-    </div>
-    <div class="tabs">
-      <button class="tab active" data-view="active" id="tabActive">進行中</button>
-      <button class="tab" data-view="done" id="tabDone">已完成</button>
     </div>
   </header>
 
@@ -189,11 +213,11 @@
 <div class="composer">
   <div class="composer-inner">
     <input type="text" id="newTitle" placeholder="新增待辦事項…" autocomplete="off" enterkeyhint="done">
-    <select id="newPrio" title="重要程度">
-      <option value="high">🔴 高</option>
-      <option value="mid" selected>🟡 中</option>
-      <option value="low">🟢 低</option>
-    </select>
+    <div class="seg" id="newPrio" data-value="mid" role="group" aria-label="重要程度">
+      <button type="button" class="seg-opt" data-val="high" title="高" aria-label="高" aria-pressed="false">🔴</button>
+      <button type="button" class="seg-opt active" data-val="mid" title="中" aria-label="中" aria-pressed="true">🟡</button>
+      <button type="button" class="seg-opt" data-val="low" title="低" aria-label="低" aria-pressed="false">🟢</button>
+    </div>
     <button class="add-btn" id="addBtn" aria-label="新增">＋</button>
   </div>
   <div class="composer-more" id="composerMore">
@@ -204,8 +228,10 @@
       <option value="weekly">每週</option>
       <option value="monthly">每月</option>
     </select>
+    <input type="number" id="newEst" min="0" step="5" placeholder="預計時間（分）" title="預計時間（分鐘）">
   </div>
   <button class="toggle-more" id="toggleMore">＋ 到期日／重複</button>
+</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -220,7 +246,6 @@
   const WEEKDAY = ["週日","週一","週二","週三","週四","週五","週六"];
 
   let state = load();
-  let view = "active";
   const openIds = new Set();   // 展開中的卡片
 
   // ---------- 資料 ----------
@@ -263,28 +288,70 @@
   function addTask(){
     const title = $("#newTitle").value.trim();
     if(!title) return;
+    const est = $("#newEst").value.trim();
     const t = {
       id: uid(), title,
-      priority: $("#newPrio").value,
+      priority: $("#newPrio").dataset.value,
       due: $("#newDue").value || null,
       repeat: $("#newRepeat").value,
       note:"", subtasks:[], done:false, doneAt:null,
+      estimatedMin: est ? Math.max(0,parseInt(est,10)) : null,
+      elapsedSec: 0, running:false, timerStartedAt:null,
       createdAt: new Date().toISOString()
     };
     state.tasks.push(t); save();
-    $("#newTitle").value=""; $("#newDue").value=""; $("#newRepeat").value="none";
+    $("#newTitle").value=""; $("#newDue").value=""; $("#newRepeat").value="none"; $("#newEst").value="";
     $("#composerMore").classList.remove("open");
     render(); $("#newTitle").focus();
   }
+
+  // ---------- 時間追蹤 ----------
+  function currentElapsedSec(t){
+    let sec = t.elapsedSec||0;
+    if(t.running && t.timerStartedAt) sec += Math.floor((Date.now()-new Date(t.timerStartedAt).getTime())/1000);
+    return sec;
+  }
+  function formatElapsed(sec){
+    sec = Math.max(0, Math.floor(sec));
+    const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
+    return (h>0 ? h+":"+String(m).padStart(2,"0") : String(m)) + ":" + String(s).padStart(2,"0");
+  }
+  function stopTimerAccum(t){
+    if(t.running){ t.elapsedSec = currentElapsedSec(t); t.running=false; t.timerStartedAt=null; }
+  }
+  function startTimer(t){
+    if(t.done || t.running) return;
+    t.running=true; t.timerStartedAt=new Date().toISOString();
+    save(); render();
+  }
+  function pauseTimer(t){
+    if(!t.running) return;
+    stopTimerAccum(t); save(); render();
+  }
+  function completeTimerTask(t){
+    stopTimerAccum(t); toggleDone(t);
+  }
+  function updateRunningChips(){
+    document.querySelectorAll("[data-timer-live]").forEach(el=>{
+      const id = el.getAttribute("data-timer-live");
+      const t = state.tasks.find(x=>x.id===id);
+      if(t && t.running) el.textContent = "⏱ "+formatElapsed(currentElapsedSec(t));
+    });
+  }
+  setInterval(updateRunningChips, 1000);
+
   function toggleDone(t){
     if(!t.done){
+      stopTimerAccum(t);
       // 完成。若有重複，先生出下一個進行中的同事項
       if(t.repeat && t.repeat!=="none"){
         state.tasks.push({
           id:uid(), title:t.title, priority:t.priority,
           due: nextDue(t.due, t.repeat), repeat:t.repeat,
           note:t.note, subtasks:t.subtasks.map(s=>({id:uid(),title:s.title,done:false})),
-          done:false, doneAt:null, createdAt:new Date().toISOString()
+          done:false, doneAt:null,
+          estimatedMin:t.estimatedMin, elapsedSec:0, running:false, timerStartedAt:null,
+          createdAt:new Date().toISOString()
         });
         toast("已完成，下一次已自動排好");
       }
@@ -301,13 +368,22 @@
   function patch(t, k, v){ t[k]=v; save(); }
 
   // ---------- 畫面 ----------
+  // 進行中／已完成不再是分頁，而是同一份清單：勾選後該筆會直接移到最下面的「已完成」區塊。
   function render(){
     $("#todayLabel").textContent = (()=>{ const d=new Date(); return (d.getMonth()+1)+"月"+d.getDate()+"日 "+WEEKDAY[d.getDay()]; })();
-    $("#tabActive").classList.toggle("active", view==="active");
-    $("#tabDone").classList.toggle("active", view==="done");
-    $("#settings").style.display = view==="active" ? "block" : "none";
     const list = $("#list"); list.innerHTML="";
-    view==="active" ? renderActive(list) : renderDone(list);
+    const active = state.tasks.filter(t=>!t.done);
+    const done = state.tasks.filter(t=>t.done);
+    if(active.length===0 && done.length===0){
+      list.innerHTML = '<div class="empty"><div class="big">🎉</div>目前沒有待辦事項<br>在下面新增一筆吧</div>';
+      return;
+    }
+    renderActive(list, active);
+    if(active.length===0 && done.length>0){
+      const note=document.createElement("div"); note.className="all-done-note";
+      note.textContent="🎉 太棒了，目前沒有進行中的事項"; list.appendChild(note);
+    }
+    renderDone(list, done);
   }
 
   function sortActive(arr){
@@ -318,12 +394,7 @@
     });
   }
 
-  function renderActive(list){
-    const active = state.tasks.filter(t=>!t.done);
-    if(active.length===0){
-      list.innerHTML = '<div class="empty"><div class="big">🎉</div>目前沒有待辦事項<br>在下面新增一筆吧</div>';
-      return;
-    }
+  function renderActive(list, active){
     ["high","mid","low"].forEach(p=>{
       const items = sortActive(active.filter(t=>t.priority===p));
       if(items.length===0) return;
@@ -336,21 +407,23 @@
     });
   }
 
-  function renderDone(list){
-    const done = state.tasks.filter(t=>t.done).sort((a,b)=>new Date(b.doneAt)-new Date(a.doneAt));
-    if(done.length===0){
-      list.innerHTML = '<div class="empty"><div class="big">📭</div>還沒有完成的事項</div>';
-      return;
-    }
-    const bar=document.createElement("div"); bar.className="done-actions";
-    bar.innerHTML='<button class="link-btn" id="clearDone">清空已完成紀錄</button>';
-    list.appendChild(bar);
-    bar.querySelector("#clearDone").onclick=()=>{
+  function renderDone(list, done){
+    if(done.length===0) return;
+    done.sort((a,b)=>new Date(b.doneAt)-new Date(a.doneAt));
+    const g=document.createElement("div"); g.className="group";
+    const head=document.createElement("div"); head.className="group-head";
+    head.innerHTML = `<span class="dot donedot"></span><span class="group-title">已完成</span>`+
+      `<span class="group-count">${done.length}</span>`;
+    const clearBtn=document.createElement("button"); clearBtn.className="link-btn clear-btn"; clearBtn.textContent="清空已完成紀錄";
+    clearBtn.onclick=()=>{
       if(confirm("確定要清空所有已完成紀錄？此動作無法復原。")){
         state.tasks=state.tasks.filter(t=>!t.done); save(); render();
       }
     };
-    done.forEach(t=>list.appendChild(card(t)));
+    head.appendChild(clearBtn);
+    g.appendChild(head);
+    done.forEach(t=>g.appendChild(card(t)));
+    list.appendChild(g);
   }
 
   function card(t){
@@ -386,10 +459,28 @@
     if(t.note && t.note.trim()){
       const ch=document.createElement("span"); ch.className="chip notewhen"; ch.textContent="📝 備註"; meta.appendChild(ch);
     }
+    if(t.estimatedMin){
+      const ch=document.createElement("span"); ch.className="chip estchip"; ch.textContent="🎯 預計 "+t.estimatedMin+"分"; meta.appendChild(ch);
+    }
+    if(t.elapsedSec>0 || t.running){
+      const ch=document.createElement("span"); ch.className="chip timerchip";
+      ch.setAttribute("data-timer-live", t.id);
+      ch.textContent="⏱ "+formatElapsed(currentElapsedSec(t));
+      meta.appendChild(ch);
+    }
     if(meta.children.length) main.appendChild(meta);
 
     main.onclick=()=>{ if(openIds.has(t.id))openIds.delete(t.id); else openIds.add(t.id); renderDetail(); };
     row.appendChild(main);
+
+    if(!t.done){
+      const tb=document.createElement("button");
+      tb.className="timer-btn"+(t.running?" running":"");
+      tb.textContent = t.running ? "⏸" : "▶";
+      tb.title = t.running ? "暫停" : "開始";
+      tb.onclick=e=>{ e.stopPropagation(); t.running ? pauseTimer(t) : startTimer(t); };
+      row.appendChild(tb);
+    }
 
     const exp=document.createElement("div"); exp.className="expander"; exp.textContent = openIds.has(t.id)?"收合":"展開";
     exp.onclick=()=>{ if(openIds.has(t.id))openIds.delete(t.id); else openIds.add(t.id); renderDetail(); };
@@ -417,6 +508,38 @@
     three.appendChild(wrapField("重複", selectEl(
       [["none","不重複"],["daily","每天"],["weekly","每週"],["monthly","每月"]], t.repeat||"none", v=>{ patch(t,"repeat",v); render(); })));
     d.appendChild(three);
+
+    // 時間追蹤：預計時間 / 已花費時間
+    const timeThree=document.createElement("div"); timeThree.className="field field-3";
+    const estInput=document.createElement("input"); estInput.type="number"; estInput.min="0"; estInput.step="5";
+    estInput.placeholder="例如 30"; estInput.value = t.estimatedMin!=null ? t.estimatedMin : "";
+    estInput.onchange=()=>{
+      const v=estInput.value.trim();
+      patch(t,"estimatedMin", v ? Math.max(0,parseInt(v,10)) : null); render();
+    };
+    timeThree.appendChild(wrapField("預計時間（分鐘）", estInput));
+
+    const elapsedBox=document.createElement("div");
+    const elLabel=document.createElement("label"); elLabel.textContent="已花費時間";
+    const elVal=document.createElement("div"); elVal.className="elapsed-display";
+    elVal.setAttribute("data-timer-live", t.id);
+    elVal.textContent = "⏱ "+formatElapsed(currentElapsedSec(t));
+    elapsedBox.append(elLabel, elVal);
+    timeThree.appendChild(elapsedBox);
+    d.appendChild(timeThree);
+
+    const timerActions=document.createElement("div"); timerActions.className="timer-actions";
+    const startBtn=document.createElement("button"); startBtn.className="btn-small"; startBtn.textContent="▶ 開始";
+    startBtn.disabled = t.done || t.running;
+    startBtn.onclick=()=>startTimer(t);
+    const pauseBtn=document.createElement("button"); pauseBtn.className="btn-small alt"; pauseBtn.textContent="⏸ 暫停";
+    pauseBtn.disabled = t.done || !t.running;
+    pauseBtn.onclick=()=>pauseTimer(t);
+    const completeBtn=document.createElement("button"); completeBtn.className="btn-small done"; completeBtn.textContent="✅ 標記完成";
+    completeBtn.disabled = t.done;
+    completeBtn.onclick=()=>completeTimerTask(t);
+    timerActions.append(startBtn, pauseBtn, completeBtn);
+    d.appendChild(timerActions);
 
     // 備註
     d.appendChild(fieldArea("備註", t.note||"", v=>{ patch(t,"note",v); }));
@@ -513,13 +636,23 @@
   }
 
   // ---------- 綁定 ----------
+  const newPrioSeg = $("#newPrio");
+  newPrioSeg.querySelectorAll(".seg-opt").forEach(btn=>{
+    btn.onclick=()=>{
+      newPrioSeg.dataset.value = btn.dataset.val;
+      newPrioSeg.querySelectorAll(".seg-opt").forEach(b=>{
+        const on = b===btn;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-pressed", on?"true":"false");
+      });
+    };
+  });
   $("#addBtn").onclick=addTask;
   $("#newTitle").addEventListener("keydown",e=>{ if(e.key==="Enter") addTask(); });
   $("#toggleMore").onclick=()=>{
     const m=$("#composerMore"); const open=m.classList.toggle("open");
     $("#toggleMore").textContent = open ? "－ 收起" : "＋ 到期日／重複";
   };
-  document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ view=b.dataset.view; render(); });
   $("#exportBtn").onclick=exportBackup;
   $("#importBtn").onclick=()=>$("#importFile").click();
   $("#importFile").onchange=e=>{ if(e.target.files[0]) importBackup(e.target.files[0]); e.target.value=""; };
