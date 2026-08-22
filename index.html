@@ -53,20 +53,15 @@
   .title-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
   h1{font-size:28px;font-weight:800;margin:0;letter-spacing:-.5px}
   .date-today{color:var(--muted);font-size:14px;font-weight:600}
-  .tabs{display:flex;gap:6px;margin-top:12px}
-  .tab{
-    flex:1;border:none;background:transparent;color:var(--muted);
-    font-size:15px;font-weight:700;padding:8px 4px;border-radius:10px;cursor:pointer;
-  }
-  .tab.active{background:var(--card);color:var(--text);box-shadow:var(--shadow)}
-
   /* 群組 */
   .group{margin-top:18px}
   .group-head{display:flex;align-items:center;gap:8px;margin:0 4px 8px}
   .dot{width:9px;height:9px;border-radius:50%}
-  .dot.high{background:var(--high)} .dot.mid{background:var(--mid)} .dot.low{background:var(--low)}
+  .dot.high{background:var(--high)} .dot.mid{background:var(--mid)} .dot.low{background:var(--low)} .dot.donedot{background:var(--done)}
   .group-title{font-size:13px;font-weight:800;letter-spacing:.3px;text-transform:none}
   .group-count{color:var(--muted);font-size:13px;font-weight:600}
+  .group-head .clear-btn{margin-left:auto}
+  .all-done-note{text-align:center;color:var(--muted);padding:20px 4px;font-size:14px}
 
   /* 卡片 */
   .card{
@@ -140,7 +135,6 @@
   .empty .big{font-size:40px;margin-bottom:10px}
 
   /* 已完成 */
-  .done-actions{display:flex;justify-content:flex-end;margin:6px 4px}
   .link-btn{background:none;border:none;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer}
 
   /* 新增列（底部固定） */
@@ -193,10 +187,6 @@
     <div class="title-row">
       <h1>我的待辦</h1>
       <span class="date-today" id="todayLabel"></span>
-    </div>
-    <div class="tabs">
-      <button class="tab active" data-view="active" id="tabActive">進行中</button>
-      <button class="tab" data-view="done" id="tabDone">已完成</button>
     </div>
   </header>
 
@@ -253,7 +243,6 @@
   const WEEKDAY = ["週日","週一","週二","週三","週四","週五","週六"];
 
   let state = load();
-  let view = "active";
   const openIds = new Set();   // 展開中的卡片
 
   // ---------- 資料 ----------
@@ -376,13 +365,22 @@
   function patch(t, k, v){ t[k]=v; save(); }
 
   // ---------- 畫面 ----------
+  // 進行中／已完成不再是分頁，而是同一份清單：勾選後該筆會直接移到最下面的「已完成」區塊。
   function render(){
     $("#todayLabel").textContent = (()=>{ const d=new Date(); return (d.getMonth()+1)+"月"+d.getDate()+"日 "+WEEKDAY[d.getDay()]; })();
-    $("#tabActive").classList.toggle("active", view==="active");
-    $("#tabDone").classList.toggle("active", view==="done");
-    $("#settings").style.display = view==="active" ? "block" : "none";
     const list = $("#list"); list.innerHTML="";
-    view==="active" ? renderActive(list) : renderDone(list);
+    const active = state.tasks.filter(t=>!t.done);
+    const done = state.tasks.filter(t=>t.done);
+    if(active.length===0 && done.length===0){
+      list.innerHTML = '<div class="empty"><div class="big">🎉</div>目前沒有待辦事項<br>在下面新增一筆吧</div>';
+      return;
+    }
+    renderActive(list, active);
+    if(active.length===0 && done.length>0){
+      const note=document.createElement("div"); note.className="all-done-note";
+      note.textContent="🎉 太棒了，目前沒有進行中的事項"; list.appendChild(note);
+    }
+    renderDone(list, done);
   }
 
   function sortActive(arr){
@@ -393,12 +391,7 @@
     });
   }
 
-  function renderActive(list){
-    const active = state.tasks.filter(t=>!t.done);
-    if(active.length===0){
-      list.innerHTML = '<div class="empty"><div class="big">🎉</div>目前沒有待辦事項<br>在下面新增一筆吧</div>';
-      return;
-    }
+  function renderActive(list, active){
     ["high","mid","low"].forEach(p=>{
       const items = sortActive(active.filter(t=>t.priority===p));
       if(items.length===0) return;
@@ -411,21 +404,23 @@
     });
   }
 
-  function renderDone(list){
-    const done = state.tasks.filter(t=>t.done).sort((a,b)=>new Date(b.doneAt)-new Date(a.doneAt));
-    if(done.length===0){
-      list.innerHTML = '<div class="empty"><div class="big">📭</div>還沒有完成的事項</div>';
-      return;
-    }
-    const bar=document.createElement("div"); bar.className="done-actions";
-    bar.innerHTML='<button class="link-btn" id="clearDone">清空已完成紀錄</button>';
-    list.appendChild(bar);
-    bar.querySelector("#clearDone").onclick=()=>{
+  function renderDone(list, done){
+    if(done.length===0) return;
+    done.sort((a,b)=>new Date(b.doneAt)-new Date(a.doneAt));
+    const g=document.createElement("div"); g.className="group";
+    const head=document.createElement("div"); head.className="group-head";
+    head.innerHTML = `<span class="dot donedot"></span><span class="group-title">已完成</span>`+
+      `<span class="group-count">${done.length}</span>`;
+    const clearBtn=document.createElement("button"); clearBtn.className="link-btn clear-btn"; clearBtn.textContent="清空已完成紀錄";
+    clearBtn.onclick=()=>{
       if(confirm("確定要清空所有已完成紀錄？此動作無法復原。")){
         state.tasks=state.tasks.filter(t=>!t.done); save(); render();
       }
     };
-    done.forEach(t=>list.appendChild(card(t)));
+    head.appendChild(clearBtn);
+    g.appendChild(head);
+    done.forEach(t=>g.appendChild(card(t)));
+    list.appendChild(g);
   }
 
   function card(t){
@@ -644,7 +639,6 @@
     const m=$("#composerMore"); const open=m.classList.toggle("open");
     $("#toggleMore").textContent = open ? "－ 收起" : "＋ 到期日／重複";
   };
-  document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ view=b.dataset.view; render(); });
   $("#exportBtn").onclick=exportBackup;
   $("#importBtn").onclick=()=>$("#importFile").click();
   $("#importFile").onchange=e=>{ if(e.target.files[0]) importBackup(e.target.files[0]); e.target.value=""; };
